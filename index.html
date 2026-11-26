@@ -15,4 +15,130 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function safeImage(v){try{const u=new URL(v);return u.protocol==='https:'?esc(u.href):''}catch{return ''}}
 async function loadProducts(){try{const r=await fetch('/.netlify/functions/products',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const rows=await r.json();if(!Array.isArray(rows))throw Error('Invalid response');const map={'snacks':'snacks','drinks':'drinks','sweets':'sweets','grocery':'grocery','thai finds':'finds','go! box':'box'};products=rows.filter(p=>p&&p.name&&p.price!==null&&Number.isFinite(Number(p.price))).map(p=>[esc(p.name),esc(p.chineseName||p.name),map[String(p.category).trim().toLowerCase()]||'finds',Number(p.salePrice??p.price),'',safeImage(p.image),p.preorder===true,Math.max(0,Number(p.stock)||0),esc(p.description),p.newArrival===true,p.featured===true,p.salePrice!=null, String(p.id)]);bag={};render();if(!products.length)$('main').insertAdjacentHTML('afterbegin','<p class="notice">'+t('No active products yet','暂无上架商品')+'</p>')}catch(e){$('main').innerHTML='<div class="panel">'+t('Unable to load products. Please try again.','无法加载商品，请重试。')+' <button onclick="loadProducts()">Retry</button></div>'}}
 render();loadProducts();
+const WA_NUMBER = '';
+
+function openWhatsApp() {
+  if (!WA_NUMBER) return;
+  const message = t(
+    'Hi BANGKOK GO! How can I order?',
+    '您好！我想咨询如何购买商品。'
+  );
+  window.open(
+    'https://wa.me/' + WA_NUMBER +
+    '?text=' + encodeURIComponent(message),
+    '_blank', 'noopener,noreferrer'
+  );
+}
+
+const originalRender = render;
+
+render = function() {
+  originalRender();
+
+  $('foot').innerHTML = `
+    <div style="max-width:1100px;margin:auto">
+      <h2>BANGKOK GO! 曼谷购</h2>
+      <p>🇹🇭 From Thailand to Malaysia 🇲🇾</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+        <div>
+          <h3>${t('Information','关于我们')}</h3>
+          <button onclick="go('about')">${L('about')}</button><br>
+          <button onclick="go('faq')">FAQ</button><br>
+          <button onclick="go('policies')">${L('policies')}</button>
+        </div>
+
+        <div>
+          <h3>${t('Customer Service','客户服务')}</h3>
+          <p>${t('English · Chinese','英文 · 中文')}</p>
+          ${WA_NUMBER ? `
+          <button onclick="openWhatsApp()" style="background:#25D366">
+            WhatsApp
+          </button>` : `
+          <p>${t('Coming soon','即将上线')}</p>`}
+        </div>
+
+      </div>
+
+      <hr style="opacity:.25;margin:24px 0">
+      <p style="font-size:11px;text-align:center">
+        © 2026 BANGKOK GO! All rights reserved.
+      </p>
+    </div>`;
+
+  const support = $('bottom').lastElementChild;
+
+  support.innerHTML = `
+    <b>🎧</b>${t('Support','客服')}`;
+
+  support.onclick = function() {
+    go('contact');
+  };
+
+  if (page === 'contact') {
+    $('main').innerHTML = `
+      <h1>${t('Customer Service','客户服务')}</h1>
+      <div class="panel">
+        <h2>${t('How can we help you?','有什么可以帮您？')}</h2>
+        <p>${t('Welcome to BANGKOK GO!','欢迎来到曼谷购！')}</p>
+        ${WA_NUMBER ? `
+          <button onclick="openWhatsApp()" style="background:#25D366">
+            Chat on WhatsApp
+          </button>` : `
+          <p>${t('Customer service coming soon.','客服即将上线。')}</p>`}
+      </div>`;
+  }
+};
+
+document.body.insertAdjacentHTML('beforeend', `
+  <div id="waWidget" style="
+    display:${WA_NUMBER ? 'block' : 'none'};
+    position:fixed;
+    right:16px;
+    bottom:calc(85px + env(safe-area-inset-bottom));
+    z-index:99">
+
+    <div id="waChat" style="
+      display:none;
+      width:min(270px,85vw);
+      background:white;
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 4px 20px #0003;
+      margin-bottom:10px">
+
+      <strong>BANGKOK GO! Support</strong>
+      <p>Hello! How can we help you?</p>
+      <p>您好！有什么可以帮您？</p>
+
+      <button onclick="openWhatsApp()"
+        style="background:#25D366;width:100%">
+        Start Chat
+      </button>
+    </div>
+
+    <button onclick="
+      const c=document.getElementById('waChat');
+      c.style.display=c.style.display==='none'?'block':'none';
+    " style="
+      background:#25D366;
+      float:right;
+      width:56px;
+      height:56px;
+      padding:0;
+      font-size:25px;
+      box-shadow:0 3px 12px #0003">
+      💬
+    </button>
+  </div>
+`);
+
+if (WA_NUMBER) {
+  setTimeout(() => {
+    $('waChat').style.display = 'block';
+  }, 5000);
+}
+
+render();
 </script></html>
